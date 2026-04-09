@@ -1,0 +1,23 @@
+body {
+  margin: 0;
+  background: #f7efe2;
+  overflow: hidden;
+  color: #5a4a42;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --color-bg: #f7efe2;
+  --color-surface: rgba(255, 248, 239, 0.8);
+  --color-border: rgba(234, 88, 12, 0.24);
+  --color-primary: #ea580c;
+  --color-secondary: #ff9b17;
+  --color-text: #5a4a42;
+  --color-text-dim: rgba(90, 74, 66, 0.68);
+  --color-cattle: #ff5b2e;
+  --color-sheep: #ffb347;
+  --color-both: #ffd37a;
+}
