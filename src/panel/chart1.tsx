@@ -55,17 +55,17 @@ export default function Chart1() {
             data: [
               {
                 value: typeOutput.cattle,
-                name: "鐗涜倝浼佷笟",
+                name: "高端肉牛企业",
                 itemStyle: { color: "#ff6a1f" },
               },
               {
                 value: typeOutput.sheep,
-                name: "缇婅倝浼佷笟",
+                name: "高端羊产业企业",
                 itemStyle: { color: "#ffb347" },
               },
               {
                 value: typeOutput.both,
-                name: "缁煎悎浼佷笟",
+                name: "综合型龙头企业",
                 itemStyle: { color: "#ffd37a" },
               },
             ],

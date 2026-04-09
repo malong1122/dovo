@@ -87,14 +87,10 @@ const OutputCell = styled.div`
 `;
 
 const typeLabel = {
-  cattle: "鐗涜倝",
-  sheep: "缇婅倝",
-  both: "缁煎悎",
+  cattle: "牛板块",
+  sheep: "羊板块",
+  both: "综合",
 };
-
-function formatEnterpriseName(name: string) {
-  return name.replace(/鑲′唤鏈夐檺鍏徃|鏈夐檺璐ｄ换鍏徃|鏈夐檺鍏徃/g, "");
-}
 
 export default function Chart3() {
   const { enterprises } = useDashboardData();
@@ -105,9 +101,9 @@ export default function Chart3() {
   return (
     <Wrapper>
       <ListHeader>
-        <span>浼佷笟鍚嶇О</span>
-        <span style={{ textAlign: "center" }}>绫诲瀷</span>
-        <span style={{ textAlign: "right" }}>浜ч噺(涓囧惃)</span>
+        <span>龙头企业</span>
+        <span style={{ textAlign: "center" }}>类型</span>
+        <span style={{ textAlign: "right" }}>产量(万吨)</span>
       </ListHeader>
       <ScrollArea>
         {sorted.map((enterprise) => (
@@ -119,7 +115,7 @@ export default function Chart3() {
               setSelected(selected?.id === enterprise.id ? null : enterprise)
             }>
             <EnterpriseNameCell title={enterprise.name}>
-              {formatEnterpriseName(enterprise.name)}
+              {enterprise.name}
             </EnterpriseNameCell>
             <TypeBadge $type={enterprise.type}>
               {typeLabel[enterprise.type]}

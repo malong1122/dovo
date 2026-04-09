@@ -38,7 +38,6 @@ export default function Chart2() {
           axisLabel: {
             color: "rgba(90,74,66,0.72)",
             fontSize: 11,
-            formatter: (v: string) => v.replace("市", "").replace("盟", ""),
           },
           data: sorted.map(([name]) => name),
         },

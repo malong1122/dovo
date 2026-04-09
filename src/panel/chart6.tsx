@@ -55,17 +55,17 @@ export default function Chart6() {
             data: [
               {
                 value: scaleOutput.large,
-                name: "澶у瀷浼佷笟",
+                name: "大型龙头企业",
                 itemStyle: { color: "#ea580c" },
               },
               {
                 value: scaleOutput.medium,
-                name: "涓瀷浼佷笟",
+                name: "中型龙头企业",
                 itemStyle: { color: "#ffb347" },
               },
               {
                 value: scaleOutput.small,
-                name: "灏忓瀷浼佷笟",
+                name: "小型龙头企业",
                 itemStyle: { color: "#f6d28c" },
               },
             ],
