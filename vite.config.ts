@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: "/nm-datav/",
+  base: "./",
   resolve: {
     alias: {
       "@": resolve("src"),
