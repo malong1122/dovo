@@ -16,6 +16,7 @@
     "autofit.js": "^3.2.8",
     "d3-geo": "^3.1.1",
     "echarts": "^6.0.0",
+    "echarts-for-react": "^3.0.6",
     "gsap": "^3.13.0",
     "keli-heatmap.js": "^2.0.18",
     "leva": "^0.10.1",
