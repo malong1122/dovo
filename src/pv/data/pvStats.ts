@@ -1,5 +1,19 @@
 import type { PvFeature } from './pvLoader'
 
+export function cityCentroid(features: PvFeature[]): Map<string, [number, number]> {
+  const acc = new Map<string, { sum: [number, number]; n: number }>()
+  for (const f of features) {
+    const city = f.properties.city
+    const [lng, lat] = f.properties.centroid
+    const e = acc.get(city)
+    if (e) { e.sum[0] += lng; e.sum[1] += lat; e.n++ }
+    else acc.set(city, { sum: [lng, lat], n: 1 })
+  }
+  const out = new Map<string, [number, number]>()
+  for (const [city, { sum, n }] of acc) out.set(city, [sum[0] / n, sum[1] / n])
+  return out
+}
+
 export interface CityStats {
   city: string
   village_count: number

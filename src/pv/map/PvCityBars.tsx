@@ -4,56 +4,35 @@ import { useFrame } from '@react-three/fiber'
 import { geoMercator } from 'd3-geo'
 import { AdditiveBlending, Color, DoubleSide, Group } from 'three'
 import type { CityGeoJSON } from '@/types/map.d'
-import type { PvGeoJSON, PvVillageProps } from '../data/pvLoader'
+import type { PvGeoJSON } from '../data/pvLoader'
+import { aggregateByCity, cityCentroid } from '../data/pvStats'
 import { usePvStore } from '../pvStore'
 import { pvTexturesPromise } from './pvTextures'
 
-const TYPE_PALETTE: Record<string, { primary: Color; secondary: Color; border: string; text: string }> = {
-  '村级电站': {
-    primary: new Color('#fde68a'),
-    secondary: new Color('#f59e0b'),
-    border: '#f59e0b',
-    text: '#92400e',
-  },
-  '联村电站': {
-    primary: new Color('#fed7aa'),
-    secondary: new Color('#f97316'),
-    border: '#f97316',
-    text: '#7c2d12',
-  },
-}
-function typePalette(t: string) {
-  return TYPE_PALETTE[t] ?? {
-    primary: new Color('#bfdbfe'),
-    secondary: new Color('#2299ff'),
-    border: '#2299ff',
-    text: '#1e3a8a',
-  }
-}
+const BAR_PRIMARY = new Color('#ffe082')
+const BAR_SECONDARY = new Color('#ff8f00')
 
-interface PvMarkersProps {
+interface PvCityBarsProps {
   nmData: CityGeoJSON
   pvData: PvGeoJSON
   depth: number
 }
 
-interface MarkerProps {
+interface CityBarProps {
   position: [number, number, number]
   h: number
-  palette: ReturnType<typeof typePalette>
-  village: PvVillageProps
+  name: string
   onSelect: () => void
   ringTexture: ReturnType<typeof use<ReturnType<typeof pvTexturesPromise>>>[0]
   glowTexture: ReturnType<typeof use<ReturnType<typeof pvTexturesPromise>>>[1]
 }
 
-function PvMarker({ position, h, palette, village, onSelect, ringTexture, glowTexture }: MarkerProps) {
+function CityBar({ position, h, name, onSelect, ringTexture, glowTexture }: CityBarProps) {
   const [hovered, setHovered] = useState(false)
   const ringRef = useRef<Group>(null!)
 
-  // PvMarkers 在世界坐标系中，Y 轴朝上，所以绕 Y 轴旋转光圈
   useFrame((_, delta) => {
-    if (ringRef.current) ringRef.current.rotation.y += delta * 0.7
+    if (ringRef.current) ringRef.current.rotation.y += delta * (hovered ? 1.4 : 0.6)
   })
 
   return (
@@ -63,22 +42,22 @@ function PvMarker({ position, h, palette, village, onSelect, ringTexture, glowTe
       onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer' }}
       onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto' }}
     >
-      {/* 不可见的大命中区，扩大可点击范围，视觉不变 */}
+      {/* 命中区 */}
       <mesh position={[0, h / 2, 0]} visible={false}>
-        <cylinderGeometry args={[3.5, 3.5, h + 6, 8]} />
+        <cylinderGeometry args={[6, 6, h + 10, 8]} />
         <meshBasicMaterial />
       </mesh>
 
-      {/* 底部旋转光圈：rotation-x={-PI/2} 让默认 XY 平面朝上（法线朝 +Y），相机从上方能看到正面 */}
+      {/* 底部光圈 */}
       <group ref={ringRef}>
         <mesh renderOrder={6} rotation-x={-Math.PI / 2} raycast={() => null}>
-          <planeGeometry args={[7, 7]} />
+          <planeGeometry args={[hovered ? 14 : 10, hovered ? 14 : 10]} />
           <meshBasicMaterial
             transparent
             color={0xffffff}
             map={ringTexture}
             alphaMap={ringTexture}
-            opacity={0.9}
+            opacity={hovered ? 1.0 : 0.8}
             depthTest={false}
             fog={false}
             blending={AdditiveBlending}
@@ -86,9 +65,9 @@ function PvMarker({ position, h, palette, village, onSelect, ringTexture, glowTe
         </mesh>
       </group>
 
-      {/* 渐变色柱体：沿 Y 轴向上，position-y = h/2，shader 用 vPosition.y */}
-      <mesh position={[0, h / 2, 0]}>
-        <boxGeometry args={[0.8, h, 0.8]} />
+      {/* 渐变柱体 */}
+      <mesh position={[0, h / 2, 0]} raycast={() => null}>
+        <boxGeometry args={[1.4, h, 1.4]} />
         <meshBasicMaterial
           transparent
           color="#ffffff"
@@ -98,8 +77,8 @@ function PvMarker({ position, h, palette, village, onSelect, ringTexture, glowTe
           onBeforeCompile={(shader) => {
             shader.uniforms = {
               ...shader.uniforms,
-              uColor1: { value: palette.primary },
-              uColor2: { value: palette.secondary },
+              uColor1: { value: BAR_PRIMARY },
+              uColor2: { value: BAR_SECONDARY },
               uSize: { value: h },
             }
             shader.vertexShader = shader.vertexShader.replace(
@@ -132,16 +111,16 @@ function PvMarker({ position, h, palette, village, onSelect, ringTexture, glowTe
         />
       </mesh>
 
-      {/* 辉光叠层：世界空间中竖直平面绕 Y 轴分布 */}
+      {/* 辉光 */}
       <group position={[0, h / 2, 0]} renderOrder={5}>
         {[0, 60, 120].map((deg) => (
           <mesh key={deg} rotation-y={(Math.PI / 180) * deg} raycast={() => null}>
-            <planeGeometry args={[3.2, h]} />
+            <planeGeometry args={[5, h]} />
             <meshBasicMaterial
               transparent
-              color={palette.secondary}
+              color={BAR_SECONDARY}
               map={glowTexture}
-              opacity={0.35}
+              opacity={hovered ? 0.5 : 0.32}
               depthWrite={false}
               side={DoubleSide}
               blending={AdditiveBlending}
@@ -150,36 +129,35 @@ function PvMarker({ position, h, palette, village, onSelect, ringTexture, glowTe
         ))}
       </group>
 
-      {/* hover 标签 */}
-      {hovered && (
-        <Html
-          position={[0, h + 2, 0]}
-          center
-          distanceFactor={85}
-          zIndexRange={[500, 1000]}
-          style={{ pointerEvents: 'none' }}>
-          <div style={{
-            background: 'rgba(255,250,235,0.92)',
-            border: `1px solid ${palette.border}`,
-            color: palette.text,
-            fontSize: 10,
-            padding: '2px 5px',
-            borderRadius: 3,
-            whiteSpace: 'nowrap',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
-          }}>
-            {village.village}
-          </div>
-        </Html>
-      )}
+      {/* 盟市名称标签（常驻） */}
+      <Html
+        position={[0, h + 3, 0]}
+        center
+        distanceFactor={85}
+        zIndexRange={[500, 1000]}
+        style={{ pointerEvents: 'none' }}>
+        <div style={{
+          background: 'rgba(255,248,220,0.92)',
+          border: `1px solid ${hovered ? '#f59e0b' : 'rgba(245,158,11,0.45)'}`,
+          color: '#92400e',
+          fontSize: hovered ? 11 : 10,
+          fontWeight: hovered ? 700 : 400,
+          padding: '2px 6px',
+          borderRadius: 3,
+          whiteSpace: 'nowrap',
+          boxShadow: hovered ? '0 0 10px rgba(245,158,11,0.4)' : 'none',
+        }}>
+          {name}
+        </div>
+      </Html>
     </group>
   )
 }
 
-function PvMarkersContent({ nmData, pvData, depth }: PvMarkersProps) {
-  const setSelected = usePvStore((s) => s.setSelectedVillage)
-  const selectedCity = usePvStore((s) => s.selectedCity)
+export default function PvCityBars({ nmData, pvData, depth }: PvCityBarsProps) {
   const [ringTexture, glowTexture] = use(pvTexturesPromise)
+  const selectedCity = usePvStore((s) => s.selectedCity)
+  const setSelectedCity = usePvStore((s) => s.setSelectedCity)
 
   const projection = useMemo(() => {
     return geoMercator()
@@ -188,31 +166,32 @@ function PvMarkersContent({ nmData, pvData, depth }: PvMarkersProps) {
       .translate([0, 0])
   }, [nmData])
 
-  const visibleFeatures = useMemo(
-    () => pvData.features.filter((f) => f.properties.city === selectedCity),
-    [pvData, selectedCity]
-  )
+  const { cityStats, centroidMap, maxKw } = useMemo(() => {
+    const stats = aggregateByCity(pvData.features)
+    const centroids = cityCentroid(pvData.features)
+    const max = Math.max(...stats.map((c) => c.total_build_kw))
+    return { cityStats: stats, centroidMap: centroids, maxKw: max }
+  }, [pvData])
+
+  if (selectedCity !== null) return null
 
   return (
     <group>
-      {visibleFeatures.map((feature, index) => {
-        const [lng, lat] = feature.properties.centroid
-        const proj = projection([lng, lat])
+      {cityStats.map((city) => {
+        const lngLat = centroidMap.get(city.city)
+        if (!lngLat) return null
+        const proj = projection(lngLat)
         if (!proj) return null
         const [x, y] = proj
-        const stationType = feature.properties.stations[0]?.station_type ?? ''
-        const palette = typePalette(stationType)
-        const kw = feature.properties.total_confirm_kw || feature.properties.total_build_kw
-        const h = kw >= 3000 ? 14 : kw >= 1000 ? 9 : 5
+        const h = Math.max(5, (city.total_build_kw / maxKw) * 28)
 
         return (
-          <PvMarker
-            key={index}
+          <CityBar
+            key={city.city}
             position={[x + 10, depth + 1, y]}
             h={h}
-            palette={palette}
-            village={feature.properties}
-            onSelect={() => setSelected(feature.properties)}
+            name={city.city}
+            onSelect={() => setSelectedCity(city.city)}
             ringTexture={ringTexture}
             glowTexture={glowTexture}
           />
@@ -220,10 +199,4 @@ function PvMarkersContent({ nmData, pvData, depth }: PvMarkersProps) {
       })}
     </group>
   )
-}
-
-export default function PvMarkers(props: PvMarkersProps) {
-  const selectedCity = usePvStore((s) => s.selectedCity)
-  if (!selectedCity) return null
-  return <PvMarkersContent {...props} />
 }

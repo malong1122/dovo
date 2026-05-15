@@ -7,7 +7,17 @@ const pvPromise = getPvData()
 
 export default function PvChartConfirm() {
   const pvData = use(pvPromise)
-  const cityStats = useMemo(() => aggregateByCity(pvData.features).slice(0, 8), [pvData])
+  const cityStats = useMemo(() => {
+    return aggregateByCity(pvData.features)
+      .map((c) => ({
+        ...c,
+        confirm_rate: c.total_build_kw > 0
+          ? +((c.total_confirm_kw / c.total_build_kw) * 100).toFixed(1)
+          : 0,
+      }))
+      .sort((a, b) => b.confirm_rate - a.confirm_rate)
+      .slice(0, 8)
+  }, [pvData])
 
   const option = {
     grid: { top: 8, bottom: 20, left: 80, right: 40 },
@@ -24,11 +34,7 @@ export default function PvChartConfirm() {
     },
     series: [{
       type: 'bar',
-      data: cityStats.map((c) =>
-        c.total_build_kw > 0
-          ? +((c.total_confirm_kw / c.total_build_kw) * 100).toFixed(1)
-          : 0
-      ).reverse(),
+      data: cityStats.map((c) => c.confirm_rate).reverse(),
       itemStyle: {
         color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
           colorStops: [{ offset: 0, color: '#16a34a' }, { offset: 1, color: '#4ade80' }] },

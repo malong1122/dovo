@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import { Canvas } from '@react-three/fiber'
 import { ContactShadows, MapControls } from '@react-three/drei'
 import Lights from '@/map/lights'
 import PvScene from './PvScene'
-import { getPvData, type PvGeoJSON } from '../data/pvLoader'
+import { usePvStore } from '../pvStore'
 
 const CanvasWrapper = styled.div`
   position: absolute;
@@ -14,23 +13,18 @@ const CanvasWrapper = styled.div`
 `
 
 export default function PvMap() {
-  const [pvData, setPvData] = useState<PvGeoJSON | null>(null)
-
-  useEffect(() => {
-    getPvData().then(setPvData).catch(console.error)
-  }, [])
-
   return (
     <CanvasWrapper>
       <Canvas
         flat
         shadows
         camera={{ position: [-50, 125, 250], fov: 50, far: 2000, near: 1 }}
-        dpr={[1, 2]}>
+        dpr={[1, 2]}
+        onPointerMissed={() => usePvStore.getState().setSelectedCity(null)}>
         <color attach="background" args={['#fff5e8']} />
         <fog attach="fog" args={['#fff5e8', 420, 880]} />
         <Lights />
-        <PvScene pvData={pvData} />
+        <PvScene />
         <ContactShadows
           opacity={0.4}
           scale={300}

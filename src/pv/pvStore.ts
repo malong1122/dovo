@@ -25,7 +25,7 @@ export const usePvStore = create<PvStore>()(
   subscribeWithSelector((set, _, store) => ({
     ...initialState,
     setMapPlayComplete: (v) => set({ mapPlayComplete: v }),
-    setSelectedCity: (city) => set({ selectedCity: city }),
+    setSelectedCity: (city) => set({ selectedCity: city, selectedVillage: null }),
     setSelectedVillage: (v) => set({ selectedVillage: v }),
     toggle: (key) => set((s) => ({ [key]: !s[key] } as Pick<PvStore, typeof key>)),
     reset: () => set(store.getInitialState()),

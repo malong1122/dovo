@@ -99,7 +99,7 @@ export default function PvPanel() {
   const bottomBox = useMoveTo('toTop', 0.8, 0.5)
 
   useEffect(() => {
-    const unsub = usePvStore.subscribe(
+    const unMapPlay = usePvStore.subscribe(
       (s) => s.mapPlayComplete,
       (v) => {
         if (v) {
@@ -109,7 +109,21 @@ export default function PvPanel() {
         }
       }
     )
-    return unsub
+    const unMode = usePvStore.subscribe(
+      (s) => s.mode,
+      (v) => {
+        if (v) {
+          topBox.reverse()
+          leftBox.reverse(); leftBox1.reverse()
+          rightBox.reverse(); rightBox1.reverse()
+        } else {
+          topBox.restart()
+          leftBox.restart(); leftBox1.restart()
+          rightBox.restart(); rightBox1.restart()
+        }
+      }
+    )
+    return () => { unMapPlay(); unMode() }
   }, [])
 
   return (
